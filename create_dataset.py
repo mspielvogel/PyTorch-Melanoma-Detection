@@ -72,7 +72,7 @@ class DatasetCreator():
                     output_path = os.path.join(split_folder, image_name)
                     executor.submit(shutil.copy(image_path, output_path))
             # Copy metadata to output folder
-            executor.submit(shutil.copy(self._metadata_path, self._output_folder))
+            executor.submit(shutil.copy(self._metadata_path, os.path.join(self._output_folder, "labels.csv")))
 
 
 if __name__ == "__main__":
