@@ -20,7 +20,11 @@ class CNNTrainer():
             os.makedirs(os.path.dirname(self._output_model))
 
         transform = transforms.Compose([transforms.ToPILImage(),
-                                        transforms.Resize(224),
+                                        transforms.RandomVerticalFlip(p=0.5),
+                                        transforms.RandomHorizontalFlip(p=0.5),
+                                        transforms.RandomApply([transforms.ColorJitter(0.5, 0.5, 0.5, 0.2)], p=0.3),
+                                        transforms.RandomGrayscale(p=0.1),
+                                        transforms.RandomResizedCrop(224),
                                         transforms.ToTensor()])
 
         train_dataset = MoleDataset(input_folder=os.path.join(self._input_folder, "train"),
@@ -93,15 +97,20 @@ class CNNTrainer():
                 print("Validation loss: {:03.4f}".format(val_loss))
 
                 if val_loss < best_val_loss:
-                    print("\nSaving model.\n")
-                    torch.save(self._model.state_dict(), self._output_model)
                     best_val_loss = val_loss
+                    print(f"\nSaving best model: {self._output_model}\n")
+                    torch.save(self._model.state_dict(), self._output_model)
+
+                    example = torch.rand(1, 3, 224, 224)
+                    if self._use_gpu:
+                        example = example.cuda()
+                    traced_script_module = torch.jit.trace(self._model, example)
+                    traced_script_module.save("MoleDetectionApp/app/src/main/assets/mobilnetv2.pt")
+
 
             print("Time: {:03.2f}\n\n".format(time.time() - start))
 
-        example = torch.rand(1, 3, 224, 224)
-        traced_script_module = torch.jit.trace(self._model, example)
-        traced_script_module.save("app/src/main/assets/model_mobilnetv2.pt")
+
 
 
 if __name__ == "__main__":
@@ -109,7 +118,7 @@ if __name__ == "__main__":
               "output_model": "models/mobilenet_v2_2020_05_30.pth",
               "batch_size": 16,
               "epochs": 10,
-              "val_every_epoch": 2,
+              "val_every_epoch": 1,
               "learning_rate": 0.001,
               "learning_rate_decay": 0.997}
 
