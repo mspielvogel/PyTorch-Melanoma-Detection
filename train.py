@@ -10,9 +10,10 @@ class CNNTrainer():
     def __init__(self, config):
         self._input_folder = config.get("input_folder", "data/training_sets/HAM10000")
         self._output_model = config["output_model"]
-        self._batchsize = config.get("batch_size", 16)
         self._epochs = config.get("epochs", 50)
         self._val_every_epoch = config.get("val_every_epoch", 5)
+
+        batch_size = config.get("batch_size", 16)
         learning_rate = config.get("learning_rate", 0.001)
         learning_rate_decay = config.get("learning_rate_decay", 0.997)
 
@@ -31,9 +32,9 @@ class CNNTrainer():
                                   csv_file=os.path.join(self._input_folder, "labels.csv"),
                                   transform=transform)
 
-        self._train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self._batchsize,
+        self._train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,
                                                          shuffle=True, num_workers=4)
-        self._val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self._batchsize,
+        self._val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size,
                                                        shuffle=False, num_workers=4)
 
         self._model = models.mobilenet_v2(pretrained=True)
@@ -71,7 +72,7 @@ class CNNTrainer():
 
                 running_loss += loss.item()
             train_loss = running_loss / i
-            print("Epoch: {}/{}\nLearning Rate: {}\nTraining loss: {:03.4f}".format(epoch + 1, self._epochs,
+            print("Epoch: {}/{}\nLearning Rate: {:01.06}\nTraining loss: {:02.4f}".format(epoch + 1, self._epochs,
                                                                                     self._scheduler.get_lr()[0],
                                                                                     train_loss))
             self._scheduler.step()
@@ -97,7 +98,7 @@ class CNNTrainer():
                     torch.save(self._model.state_dict(), self._output_model)
                     best_val_loss = val_loss
 
-            print("Time: {:03.2f}\n\n".format(time.time() - start))
+            print("Time: {:03.2f} s\n\n".format(time.time() - start))
 
         example = torch.rand(1, 3, 224, 224)
         traced_script_module = torch.jit.trace(self._model, example)
