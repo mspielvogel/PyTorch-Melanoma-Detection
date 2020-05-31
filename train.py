@@ -1,6 +1,7 @@
 import os
 import time
 import torch
+import torch.nn as nn
 from torchvision import transforms, models
 
 from Datasets import MoleDataset
@@ -13,8 +14,10 @@ class CNNTrainer():
         self._batchsize = config.get("batch_size", 16)
         self._epochs = config.get("epochs", 50)
         self._val_every_epoch = config.get("val_every_epoch", 5)
+        pretrain_model = config.get("pretrain_model", None)
         learning_rate = config.get("learning_rate", 0.001)
         learning_rate_decay = config.get("learning_rate_decay", 0.997)
+        num_classes = config.get("num_classes", 7)
 
         if not os.path.exists(os.path.dirname(self._output_model)):
             os.makedirs(os.path.dirname(self._output_model))
@@ -40,7 +43,9 @@ class CNNTrainer():
         self._val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self._batchsize,
                                                        shuffle=False, num_workers=4)
 
-        self._model = models.mobilenet_v2(pretrained=True)
+        self._model = nn.Sequential(models.mobilenet_v2(pretrained=True), nn.Linear(1000, num_classes))
+        if pretrain_model is not None:
+            self._model.load_state_dict(torch.load(pretrain_model))
 
         self._optimizer = torch.optim.Adam(self._model.parameters(), lr=learning_rate)
         self._scheduler = torch.optim.lr_scheduler.ExponentialLR(self._optimizer, learning_rate_decay)
@@ -101,13 +106,6 @@ class CNNTrainer():
                     print(f"\nSaving best model: {self._output_model}\n")
                     torch.save(self._model.state_dict(), self._output_model)
 
-                    example = torch.rand(1, 3, 224, 224)
-                    if self._use_gpu:
-                        example = example.cuda()
-                    traced_script_module = torch.jit.trace(self._model, example)
-                    traced_script_module.save("MoleDetectionApp/app/src/main/assets/mobilnetv2.pt")
-
-
             print("Time: {:03.2f}\n\n".format(time.time() - start))
 
 
@@ -115,12 +113,14 @@ class CNNTrainer():
 
 if __name__ == "__main__":
     config = {"input_folder": "data/training_sets/HAM10000",
-              "output_model": "models/mobilenet_v2_2020_05_30.pth",
+              "output_model": "models/mobilenet_v2_2020_05_31.pth",
+              "pretrain_model": "models/mobilenet_v2_2020_05_30.pth",
               "batch_size": 16,
-              "epochs": 10,
+              "epochs": 20,
               "val_every_epoch": 1,
               "learning_rate": 0.001,
-              "learning_rate_decay": 0.997}
+              "learning_rate_decay": 0.997,
+              "num_classes": 7}
 
     trainer = CNNTrainer(config)
     trainer.train()
