@@ -34,10 +34,10 @@ public class WelcomeActivity extends AppCompatActivity {
   }
 
   private static final PageData[] PAGES = new PageData[] {
-      new PageData(
-          R.string.welcome_page_title,
-          R.drawable.ic_logo_moledetect,
-          R.string.welcome_page_description),
+      //new PageData(
+      //    R.string.welcome_page_title,
+      //    R.drawable.ic_logo_moledetect,
+      //    R.string.welcome_page_description),
       new PageData(
           R.string.welcome_page_image_classification_title,
           R.drawable.ic_image_classification_l,
@@ -48,16 +48,7 @@ public class WelcomeActivity extends AppCompatActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_welcome);
-
-    findViewById(R.id.skip_button).setOnClickListener(v -> startActivity(new Intent(WelcomeActivity.this, MainActivity.class)));
-
-    mViewPager = findViewById(R.id.welcome_view_pager);
-    mViewPagerAdapter = new WelcomeViewPagerAdapter();
-    mViewPager.setAdapter(mViewPagerAdapter);
-
-    mTabLayout = findViewById(R.id.welcome_tab_layout);
-    mTabLayout.setupWithViewPager(mViewPager);
+    startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
   }
 
   private class WelcomeViewPagerAdapter extends PagerAdapter {

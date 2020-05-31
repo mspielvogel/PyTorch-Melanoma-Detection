@@ -141,7 +141,7 @@ public class ImageClassificationActivity extends AbstractCameraXActivity<ImageCl
     final String moduleAssetNameFromIntent = getIntent().getStringExtra(INTENT_MODULE_ASSET_NAME);
     mModuleAssetName = !TextUtils.isEmpty(moduleAssetNameFromIntent)
         ? moduleAssetNameFromIntent
-        : "resnet18.pt";
+        : "resnet18_s.pt";
 
     return mModuleAssetName;
   }
@@ -189,7 +189,7 @@ public class ImageClassificationActivity extends AbstractCameraXActivity<ImageCl
       final float[] topKScores = new float[TOP_K];
       for (int i = 0; i < TOP_K; i++) {
         final int ix = ixs[i];
-        topKClassNames[i] = Constants.IMAGENET_CLASSES[ix];
+        topKClassNames[i] = Constants.MOLE_CLASSES[ix];
         topKScores[i] = scores[ix];
       }
       final long analysisDuration = SystemClock.elapsedRealtime() - startTime;
