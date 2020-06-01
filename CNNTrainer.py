@@ -3,6 +3,8 @@ import time
 import torch
 import torch.nn as nn
 from torchvision import transforms, models
+import numpy as np
+import sklearn.metrics as metrics
 
 from Datasets import MoleDataset
 
@@ -68,8 +70,11 @@ class CNNTrainer():
             # Train trun
             running_loss = 0
             self._model.train()
+            y_pred = np.array([])
+            y_true = np.array([])
             for i, batch in enumerate(self._train_loader):
                 inputs, labels = batch
+                y_true = np.concatenate((y_true, labels.numpy()))
                 if self._use_gpu:
                     inputs, labels = inputs.cuda(), labels.cuda()
 
@@ -80,18 +85,25 @@ class CNNTrainer():
                 self._optimizer.step()
 
                 running_loss += loss.item()
+                y_pred = np.concatenate((y_pred, np.argmax(outputs.detach().cpu().numpy(), axis=1)))
             train_loss = running_loss / i
-            print("Epoch: {}/{}\nLearning Rate: {:01.06}\nTraining loss: {:02.4f}".format(epoch + 1, self._epochs,
-                                                                                    self._scheduler.get_lr()[0],
-                                                                                    train_loss))
+            print("Epoch: {}/{}\nLearning Rate: {:01.06}".format(epoch + 1, self._epochs,
+                                                                    self._scheduler.get_lr()[0]))
+            print("Training:\tLoss {:02.4f}\tAccuracy {:01.4f}\tF1-Score {:01.4f}"
+                  "".format(train_loss, metrics.accuracy_score(y_true, y_pred),
+                            metrics.f1_score(y_true, y_pred, average="weighted")))
+
             self._scheduler.step()
 
             if (epoch + 1) % self._val_every_epoch == 0:
                 # Validation run
                 running_loss = 0
                 self._model.eval()
+                y_pred = np.array([], dtype=np.float32)
+                y_true = np.array([], dtype=np.float32)
                 for i, batch in enumerate(self._val_loader):
                     inputs, labels = batch
+                    y_true = np.concatenate((y_true, labels.numpy()))
                     if self._use_gpu:
                         inputs, labels = inputs.cuda(), labels.cuda()
 
@@ -99,12 +111,15 @@ class CNNTrainer():
                     loss = self._loss(outputs, labels)
 
                     running_loss += loss.item()
+                    y_pred = np.concatenate((y_pred, np.argmax(outputs.detach().cpu().numpy(), axis=1)))
                 val_loss = running_loss / i
-                print("Validation loss: {:03.4f}".format(val_loss))
+                print("Validation:\tLoss {:02.4f}\tAccuracy {:01.4f}\tF1-Score {:01.4f}"
+                      "".format(val_loss, metrics.accuracy_score(y_true, y_pred),
+                                metrics.f1_score(y_true, y_pred, average="weighted")))
 
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
-                    print(f"\nSaving best model: {self._output_model}\n")
+                    print(f"Saving best model: {self._output_model}")
                     torch.save(self._model.state_dict(), self._output_model)
 
             print("Time: {:03.2f} s\n\n".format(time.time() - start))
@@ -115,11 +130,11 @@ class CNNTrainer():
 if __name__ == "__main__":
     config = {"input_folder": "data/training_sets/HAM10000",
               "output_model": "models/mobilenet_v2_2020_05_31.pth",
-              "pretrain_model": "models/mobilenet_v2_2020_05_30.pth",
+              #"pretrain_model": "models/mobilenet_v2_2020_05_30.pth",
               "batch_size": 16,
               "epochs": 20,
               "val_every_epoch": 1,
-              "learning_rate": 0.001,
+              "learning_rate": 0.0001,
               "learning_rate_decay": 0.997,
               "num_classes": 7}
 
