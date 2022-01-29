@@ -1,3 +1,6 @@
 data/
 *.jpg
 *.png
+.idea
+__pycache__
+models/

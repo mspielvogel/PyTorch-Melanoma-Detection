@@ -21,7 +21,7 @@ class MoleDataset(Dataset):
         self._transform = transform
 
         self._images = os.listdir(input_folder)
-        self._names = self._metadata.dx.unique().tolist()
+        self.names = sorted(self._metadata.dx.unique().tolist())
 
     def __len__(self):
         return len(self._images)
@@ -37,6 +37,6 @@ class MoleDataset(Dataset):
             image = self._transform(image)
 
         dx = self._metadata.loc[self._metadata['image_id'] == img_name.split(".")[0]].iloc[0]["dx"]
-        label = self._names.index(dx)
+        label = self.names.index(dx)
 
         return image, label
